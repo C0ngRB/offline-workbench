@@ -59,7 +59,18 @@ var Tasks = (function () {
       task.completedAt = null;
     }
     Storage.saveTasks(tasks);
-    render();
+    
+    var allCompleted = tasks.every(function (t) { return t.completed; });
+    if (tasks.length > 0 && allCompleted) {
+      setTimeout(function() {
+        alert('🎉 恭喜！所有任务已完成！');
+        tasks.forEach(function(t) { t.completed = false; t.completedAt = null; });
+        Storage.saveTasks(tasks);
+        render();
+      }, 300);
+    } else {
+      render();
+    }
   }
 
   function getFilteredTasks() {

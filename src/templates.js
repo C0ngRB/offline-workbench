@@ -123,7 +123,18 @@ var Templates = (function () {
     if (!cl) return;
     cl.items[itemIndex].checked = !cl.items[itemIndex].checked;
     Storage.saveChecklists(checklists);
-    render();
+    
+    var allChecked = cl.items.every(function (item) { return item.checked; });
+    if (allChecked) {
+      setTimeout(function() {
+        alert('🎉 恭喜！检查清单 "' + cl.name + '" 已全部完成！');
+        checklists = checklists.filter(function (c) { return c.id !== checklistId; });
+        Storage.saveChecklists(checklists);
+        render();
+      }, 300);
+    } else {
+      render();
+    }
   }
 
   function deleteChecklist(id) {
