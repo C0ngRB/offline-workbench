@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Offline Workbench</title>
+  <link rel="stylesheet" href="styles/main.css" />
+</head>
+<body>
+  <div class="mobile-header">
+    <h2>Offline Workbench</h2>
+    <button class="hamburger" id="hamburger-btn">&#9776;</button>
+  </div>
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+  <div class="app-layout">
+    <nav class="sidebar" id="sidebar">
+      <div class="sidebar-brand">
+        <h2>Offline Workbench</h2>
+        <small>个人离线工作台</small>
+      </div>
+      <ul class="nav-list">
+        <li class="nav-item" data-page="dashboard">
+          <span class="nav-icon">🏠</span> 仪表盘
+        </li>
+        <li class="nav-item" data-page="tasks">
+          <span class="nav-icon">📋</span> 任务清单
+        </li>
+        <li class="nav-item" data-page="timer">
+          <span class="nav-icon">🍅</span> 番茄钟
+        </li>
+        <li class="nav-item" data-page="notes">
+          <span class="nav-icon">📝</span> 笔记
+        </li>
+        <li class="nav-item" data-page="templates">
+          <span class="nav-icon">✅</span> 检查清单
+        </li>
+        <li class="nav-item" data-page="exportimport">
+          <span class="nav-icon">💾</span> 导入导出
+        </li>
+        <li class="nav-item" data-page="search">
+          <span class="nav-icon">🔍</span> 搜索
+        </li>
+        <li class="nav-item" data-page="stats">
+          <span class="nav-icon">📊</span> 统计
+        </li>
+        <li class="nav-item" data-page="settings">
+          <span class="nav-icon">⚙️</span> 设置
+        </li>
+      </ul>
+    </nav>
+    <main class="main-content">
+      <div id="dashboard-content" class="page-content"></div>
+      <div id="tasks-content" class="page-content"></div>
+      <div id="timer-content" class="page-content">
+        <h1 class="page-title">🍅 番茄钟</h1>
+        <div id="timer-display"></div>
+      </div>
+      <div id="notes-content" class="page-content"></div>
+      <div id="templates-content" class="page-content"></div>
+      <div id="exportimport-content" class="page-content"></div>
+      <div id="search-content" class="page-content"></div>
+      <div id="stats-content" class="page-content"></div>
+      <div id="settings-content" class="page-content"></div>
+    </main>
+  </div>
+  <div id="modal-overlay"></div>
+
+  <script src="src/storage.js"></script>
+  <script src="src/timer.js"></script>
+  <script src="src/tasks.js"></script>
+  <script src="src/notes.js"></script>
+  <script src="src/templates.js"></script>
+  <script src="src/exportImport.js"></script>
+  <script src="src/app.js"></script>
+
+  <script>
+    (function() {
+      var hamburger = document.getElementById('hamburger-btn');
+      var sidebar = document.getElementById('sidebar');
+      var overlay = document.getElementById('sidebar-overlay');
+
+      if (hamburger) {
+        hamburger.addEventListener('click', function() {
+          sidebar.classList.toggle('open');
+          overlay.classList.toggle('open');
+        });
+      }
+
+      if (overlay) {
+        overlay.addEventListener('click', function() {
+          sidebar.classList.remove('open');
+          overlay.classList.remove('open');
+        });
+      }
+
+      document.querySelectorAll('.nav-item').forEach(function(item) {
+        item.addEventListener('click', function() {
+          if (window.innerWidth <= 768) {
+            sidebar.classList.remove('open');
+            overlay.classList.remove('open');
+          }
+        });
+      });
+    })();
+  </script>
+</body>
+</html>
