@@ -1,13 +1,9 @@
 var Tasks = (function () {
   var currentFilter = 'all';
-  var eventsBound = false;
+  var editingId = null;
 
   function init() {
     render();
-    if (!eventsBound) {
-      bindEvents();
-      eventsBound = true;
-    }
   }
 
   function getTasks() {
@@ -125,46 +121,42 @@ var Tasks = (function () {
 
     html += '</div>';
     container.innerHTML = html;
+
+    bindEvents();
   }
 
   function bindEvents() {
-    var container = document.getElementById('tasks-content');
-    if (!container) return;
-    
-    container.addEventListener('click', function(e) {
-      var addBtn = e.target.closest('#add-task-btn');
-      if (addBtn) { showTaskForm(); return; }
-      
-      var editBtn = e.target.closest('.btn-edit');
-      if (editBtn) {
-        var id = editBtn.getAttribute('data-id');
+    var addBtn = document.getElementById('add-task-btn');
+    if (addBtn) addBtn.addEventListener('click', function () { showTaskForm(); });
+
+    document.querySelectorAll('.task-checkbox').forEach(function (cb) {
+      cb.addEventListener('change', function () {
+        toggleComplete(this.getAttribute('data-id'));
+      });
+    });
+
+    document.querySelectorAll('.btn-edit').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var id = this.getAttribute('data-id');
         var task = getTasks().find(function (t) { return t.id === id; });
         if (task) showTaskForm(task);
-        return;
-      }
-      
-      var delBtn = e.target.closest('.task-card-actions .btn-danger');
-      if (delBtn) {
-        var id = delBtn.getAttribute('data-id');
+      });
+    });
+
+    document.querySelectorAll('.task-card-actions .btn-danger').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var id = this.getAttribute('data-id');
         if (confirm('确定要删除这个任务吗？')) {
           deleteTask(id);
         }
-        return;
-      }
-      
-      var filterBtn = e.target.closest('[data-filter]');
-      if (filterBtn) {
-        currentFilter = filterBtn.getAttribute('data-filter');
-        render();
-        return;
-      }
+      });
     });
-    
-    container.addEventListener('change', function(e) {
-      var checkbox = e.target.closest('.task-checkbox');
-      if (checkbox) {
-        toggleComplete(checkbox.getAttribute('data-id'));
-      }
+
+    document.querySelectorAll('[data-filter]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        currentFilter = this.getAttribute('data-filter');
+        render();
+      });
     });
   }
 
@@ -215,19 +207,10 @@ var Tasks = (function () {
       '</div>';
 
     modal.classList.add('active');
-    
-    var closeBtn = document.getElementById('modal-close-btn');
-    var cancelBtn = document.getElementById('modal-cancel-btn');
-    var saveBtn = document.getElementById('modal-save-btn');
-    
-    function handleClose() {
-      closeBtn.removeEventListener('click', handleClose);
-      cancelBtn.removeEventListener('click', handleClose);
-      saveBtn.removeEventListener('click', handleSave);
-      closeModal();
-    }
-    
-    function handleSave() {
+
+    document.getElementById('modal-close-btn').addEventListener('click', closeModal);
+    document.getElementById('modal-cancel-btn').addEventListener('click', closeModal);
+    document.getElementById('modal-save-btn').addEventListener('click', function () {
       var title = document.getElementById('task-title-input').value.trim();
       if (!title) {
         document.getElementById('task-title-input').classList.add('input-error');
@@ -244,15 +227,8 @@ var Tasks = (function () {
       } else {
         addTask(data);
       }
-      closeBtn.removeEventListener('click', handleClose);
-      cancelBtn.removeEventListener('click', handleClose);
-      saveBtn.removeEventListener('click', handleSave);
       closeModal();
-    }
-    
-    closeBtn.addEventListener('click', handleClose);
-    cancelBtn.addEventListener('click', handleClose);
-    saveBtn.addEventListener('click', handleSave);
+    });
   }
 
   function closeModal() {

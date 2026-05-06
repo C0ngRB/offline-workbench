@@ -1,14 +1,9 @@
 var Notes = (function () {
   var editingId = null;
   var showPreview = false;
-  var eventsBound = false;
 
   function init() {
     render();
-    if (!eventsBound) {
-      bindEvents();
-      eventsBound = true;
-    }
   }
 
   function getNotes() {
@@ -117,31 +112,29 @@ var Notes = (function () {
 
     html += '</div>';
     container.innerHTML = html;
+
+    bindEvents();
   }
 
   function bindEvents() {
-    var container = document.getElementById('notes-content');
-    if (!container) return;
-    
-    container.addEventListener('click', function(e) {
-      var addBtn = e.target.closest('#add-note-btn');
-      if (addBtn) { showNoteForm(); return; }
-      
-      var editBtn = e.target.closest('.note-card .btn-edit');
-      if (editBtn) {
-        var id = editBtn.getAttribute('data-id');
+    var addBtn = document.getElementById('add-note-btn');
+    if (addBtn) addBtn.addEventListener('click', function () { showNoteForm(); });
+
+    document.querySelectorAll('.note-card .btn-edit').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var id = this.getAttribute('data-id');
         var note = getNotes().find(function (n) { return n.id === id; });
         if (note) showNoteForm(note);
-        return;
-      }
-      
-      var delBtn = e.target.closest('.note-card .btn-danger');
-      if (delBtn) {
-        var id = delBtn.getAttribute('data-id');
+      });
+    });
+
+    document.querySelectorAll('.note-card .btn-danger').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var id = this.getAttribute('data-id');
         if (confirm('确定要删除这条笔记吗？')) {
           deleteNote(id);
         }
-      }
+      });
     });
   }
 
@@ -184,19 +177,7 @@ var Notes = (function () {
     var contentInput = document.getElementById('note-content-input');
     var isPreview = false;
 
-    var closeBtn = document.getElementById('modal-close-btn');
-    var cancelBtn = document.getElementById('modal-cancel-btn');
-    var saveBtn = document.getElementById('modal-save-btn');
-    
-    function handleClose() {
-      previewBtn.removeEventListener('click', handlePreviewToggle);
-      closeBtn.removeEventListener('click', handleClose);
-      cancelBtn.removeEventListener('click', handleClose);
-      saveBtn.removeEventListener('click', handleSave);
-      closeModal();
-    }
-    
-    function handlePreviewToggle() {
+    previewBtn.addEventListener('click', function () {
       isPreview = !isPreview;
       if (isPreview) {
         previewArea.innerHTML = renderMarkdown(contentInput.value);
@@ -208,9 +189,11 @@ var Notes = (function () {
         contentInput.style.display = 'block';
         previewBtn.textContent = '预览';
       }
-    }
-    
-    function handleSave() {
+    });
+
+    document.getElementById('modal-close-btn').addEventListener('click', closeModal);
+    document.getElementById('modal-cancel-btn').addEventListener('click', closeModal);
+    document.getElementById('modal-save-btn').addEventListener('click', function () {
       var title = document.getElementById('note-title-input').value.trim();
       if (!title) {
         document.getElementById('note-title-input').classList.add('input-error');
@@ -225,17 +208,8 @@ var Notes = (function () {
       } else {
         addNote(data);
       }
-      previewBtn.removeEventListener('click', handlePreviewToggle);
-      closeBtn.removeEventListener('click', handleClose);
-      cancelBtn.removeEventListener('click', handleClose);
-      saveBtn.removeEventListener('click', handleSave);
       closeModal();
-    }
-    
-    previewBtn.addEventListener('click', handlePreviewToggle);
-    closeBtn.addEventListener('click', handleClose);
-    cancelBtn.addEventListener('click', handleClose);
-    saveBtn.addEventListener('click', handleSave);
+    });
   }
 
   function closeModal() {
