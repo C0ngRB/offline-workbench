@@ -81,6 +81,10 @@ var Templates = (function () {
 
   function init() {
     render();
+    if (!Templates.eventsBound) {
+      bindEvents();
+      Templates.eventsBound = true;
+    }
   }
 
   function getChecklists() {
@@ -188,30 +192,33 @@ var Templates = (function () {
 
     html += '</div>';
     container.innerHTML = html;
-
-    bindEvents();
   }
 
   function bindEvents() {
-    document.querySelectorAll('[data-create]').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        createChecklist(this.getAttribute('data-create'));
+    var container = document.getElementById('templates-content');
+    if (!container) return;
+    
+    container.addEventListener('click', function(e) {
+      var createBtn = e.target.closest('[data-create]');
+      if (createBtn) {
+        createChecklist(createBtn.getAttribute('data-create'));
         render();
-      });
-    });
-
-    document.querySelectorAll('[data-delete-cl]').forEach(function (btn) {
-      btn.addEventListener('click', function () {
+        return;
+      }
+      
+      var delBtn = e.target.closest('[data-delete-cl]');
+      if (delBtn) {
         if (confirm('确定要删除这个检查清单吗？')) {
-          deleteChecklist(this.getAttribute('data-delete-cl'));
+          deleteChecklist(delBtn.getAttribute('data-delete-cl'));
         }
-      });
+      }
     });
-
-    document.querySelectorAll('.check-item input[type="checkbox"]').forEach(function (cb) {
-      cb.addEventListener('change', function () {
-        toggleCheckItem(this.getAttribute('data-cl-id'), parseInt(this.getAttribute('data-item-index')));
-      });
+    
+    container.addEventListener('change', function(e) {
+      var checkbox = e.target.closest('.check-item input[type="checkbox"]');
+      if (checkbox) {
+        toggleCheckItem(checkbox.getAttribute('data-cl-id'), parseInt(checkbox.getAttribute('data-item-index')));
+      }
     });
   }
 

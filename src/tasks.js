@@ -1,9 +1,13 @@
 var Tasks = (function () {
   var currentFilter = 'all';
-  var editingId = null;
+  var eventsBound = false;
 
   function init() {
     render();
+    if (!eventsBound) {
+      bindEvents();
+      eventsBound = true;
+    }
   }
 
   function getTasks() {
@@ -121,42 +125,46 @@ var Tasks = (function () {
 
     html += '</div>';
     container.innerHTML = html;
-
-    bindEvents();
   }
 
   function bindEvents() {
-    var addBtn = document.getElementById('add-task-btn');
-    if (addBtn) addBtn.addEventListener('click', function () { showTaskForm(); });
-
-    document.querySelectorAll('.task-checkbox').forEach(function (cb) {
-      cb.addEventListener('change', function () {
-        toggleComplete(this.getAttribute('data-id'));
-      });
-    });
-
-    document.querySelectorAll('.btn-edit').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        var id = this.getAttribute('data-id');
+    var container = document.getElementById('tasks-content');
+    if (!container) return;
+    
+    container.addEventListener('click', function(e) {
+      var addBtn = e.target.closest('#add-task-btn');
+      if (addBtn) { showTaskForm(); return; }
+      
+      var editBtn = e.target.closest('.btn-edit');
+      if (editBtn) {
+        var id = editBtn.getAttribute('data-id');
         var task = getTasks().find(function (t) { return t.id === id; });
         if (task) showTaskForm(task);
-      });
-    });
-
-    document.querySelectorAll('.task-card-actions .btn-danger').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        var id = this.getAttribute('data-id');
+        return;
+      }
+      
+      var delBtn = e.target.closest('.task-card-actions .btn-danger');
+      if (delBtn) {
+        var id = delBtn.getAttribute('data-id');
         if (confirm('确定要删除这个任务吗？')) {
           deleteTask(id);
         }
-      });
-    });
-
-    document.querySelectorAll('[data-filter]').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        currentFilter = this.getAttribute('data-filter');
+        return;
+      }
+      
+      var filterBtn = e.target.closest('[data-filter]');
+      if (filterBtn) {
+        currentFilter = filterBtn.getAttribute('data-filter');
         render();
-      });
+        return;
+      }
+    });
+    
+    container.addEventListener('change', function(e) {
+      var checkbox = e.target.closest('.task-checkbox');
+      if (checkbox) {
+        toggleComplete(checkbox.getAttribute('data-id'));
+      }
     });
   }
 

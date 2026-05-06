@@ -1,10 +1,15 @@
 var App = (function () {
   var currentPage = 'dashboard';
   var pages = ['dashboard', 'tasks', 'timer', 'notes', 'templates', 'exportimport', 'settings', 'search', 'stats'];
+  var eventsBound = false;
 
   function init() {
     applyTheme();
     bindNav();
+    if (!eventsBound) {
+      bindGlobalEvents();
+      eventsBound = true;
+    }
     navigateTo('dashboard');
     Timer.onComplete(function (mode, count) {
       var modeLabels = { focus: '专注', shortBreak: '短休息', longBreak: '长休息' };
@@ -12,6 +17,141 @@ var App = (function () {
         ? '专注时间结束！今日已完成 ' + count + ' 次专注。'
         : modeLabels[mode] + '时间结束！';
       showNotification(msg);
+    });
+  }
+
+  function doSearch() {
+    var searchInput = document.getElementById('search-input');
+    var query = searchInput ? searchInput.value.trim() : '';
+    var resultsDiv = document.getElementById('search-results');
+    if (!query) {
+      if (resultsDiv) resultsDiv.innerHTML = '<div class="empty-state">请输入搜索关键词</div>';
+      return;
+    }
+
+    var taskResults = Tasks.searchTasks(query);
+    var noteResults = Notes.searchNotes(query);
+    var templateResults = Templates.searchTemplates(query);
+
+    var html = '';
+
+    if (taskResults.length > 0) {
+      html += '<h4 class="search-category">任务 (' + taskResults.length + ')</h4>';
+      html += '<div class="search-list">';
+      taskResults.forEach(function (t) {
+        html += '<div class="search-item" data-page="tasks"><strong>' + escapeHtml(t.title) + '</strong><span class="search-meta">' + t.category + ' · ' + (t.completed ? '已完成' : '进行中') + '</span></div>';
+      });
+      html += '</div>';
+    }
+
+    if (noteResults.length > 0) {
+      html += '<h4 class="search-category">笔记 (' + noteResults.length + ')</h4>';
+      html += '<div class="search-list">';
+      noteResults.forEach(function (n) {
+        html += '<div class="search-item" data-page="notes"><strong>' + escapeHtml(n.title) + '</strong><span class="search-meta">' + formatDate(n.updatedAt) + '</span></div>';
+      });
+      html += '</div>';
+    }
+
+    if (templateResults.length > 0) {
+      html += '<h4 class="search-category">模板 (' + templateResults.length + ')</h4>';
+      html += '<div class="search-list">';
+      templateResults.forEach(function (t) {
+        html += '<div class="search-item" data-page="templates"><strong>' + escapeHtml(t.name) + '</strong><span class="search-meta">' + t.items.length + ' 项</span></div>';
+      });
+      html += '</div>';
+    }
+
+    if (!html) {
+      html = '<div class="empty-state">未找到相关结果</div>';
+    }
+
+    if (resultsDiv) resultsDiv.innerHTML = html;
+  }
+
+  function bindGlobalEvents() {
+    document.body.addEventListener('click', function(e) {
+      var dashboardBtn = e.target.closest('#dashboard-content [data-page]');
+      if (dashboardBtn) {
+        navigateTo(dashboardBtn.getAttribute('data-page'));
+        return;
+      }
+      
+      var searchBtn = e.target.closest('#search-btn');
+      if (searchBtn) {
+        App.doSearch();
+        return;
+      }
+      
+      var searchResults = document.getElementById('search-results');
+      if (searchResults && searchResults.contains(e.target)) {
+        var resultItem = e.target.closest('.search-item');
+        if (resultItem) {
+          navigateTo(resultItem.getAttribute('data-page'));
+          return;
+        }
+      }
+      
+      var settingsContent = document.getElementById('settings-content');
+      if (settingsContent && settingsContent.contains(e.target)) {
+        var themeBtn = e.target.closest('[data-theme]');
+        if (themeBtn) {
+          var theme = themeBtn.getAttribute('data-theme');
+          var settings = Storage.getSettings();
+          settings.theme = theme;
+          Storage.saveSettings(settings);
+          applyTheme();
+          renderSettings();
+          return;
+        }
+        
+        var saveBtn = e.target.closest('#save-settings-btn');
+        if (saveBtn) {
+          var focusVal = parseInt(document.getElementById('setting-focus').value) || 25;
+          var shortVal = parseInt(document.getElementById('setting-short').value) || 5;
+          var longVal = parseInt(document.getElementById('setting-long').value) || 15;
+          focusVal = Math.max(1, Math.min(120, focusVal));
+          shortVal = Math.max(1, Math.min(60, shortVal));
+          longVal = Math.max(1, Math.min(60, longVal));
+          var settings = Storage.getSettings();
+          settings.focusDuration = focusVal;
+          settings.shortBreak = shortVal;
+          settings.longBreak = longVal;
+          Storage.saveSettings(settings);
+          showNotification('设置已保存');
+          renderSettings();
+          return;
+        }
+        
+        var resetBtn = e.target.closest('#reset-settings-btn');
+        if (resetBtn) {
+          if (confirm('确定要重置所有设置为默认值吗？')) {
+            Storage.saveSettings(Object.assign({}, Storage.defaultSettings));
+            applyTheme();
+            showNotification('设置已重置');
+            renderSettings();
+          }
+          return;
+        }
+        
+        var clearBtn = e.target.closest('#clear-data-btn');
+        if (clearBtn) {
+          if (confirm('确定要清空全部数据吗？此操作不可恢复！')) {
+            if (confirm('再次确认：真的要删除所有数据吗？')) {
+              Storage.clearAll();
+              showNotification('所有数据已清空');
+              navigateTo('dashboard');
+            }
+          }
+          return;
+        }
+        
+        var demoBtn = e.target.closest('#load-demo-btn');
+        if (demoBtn) {
+          loadDemoData();
+          return;
+        }
+      }
     });
   }
 
@@ -146,12 +286,6 @@ var App = (function () {
       '</div>';
 
     container.innerHTML = html;
-
-    container.querySelectorAll('[data-page]').forEach(function (el) {
-      el.addEventListener('click', function () {
-        navigateTo(this.getAttribute('data-page'));
-      });
-    });
   }
 
   function renderSettings() {
@@ -200,72 +334,6 @@ var App = (function () {
           '<button class="btn btn-secondary" id="load-demo-btn">加载示例数据</button>' +
         '</div>' +
       '</div>';
-
-    bindSettingsEvents();
-  }
-
-  function bindSettingsEvents() {
-    document.querySelectorAll('[data-theme]').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        var theme = this.getAttribute('data-theme');
-        var settings = Storage.getSettings();
-        settings.theme = theme;
-        Storage.saveSettings(settings);
-        applyTheme();
-        renderSettings();
-      });
-    });
-
-    var saveBtn = document.getElementById('save-settings-btn');
-    if (saveBtn) {
-      saveBtn.addEventListener('click', function () {
-        var focusVal = parseInt(document.getElementById('setting-focus').value) || 25;
-        var shortVal = parseInt(document.getElementById('setting-short').value) || 5;
-        var longVal = parseInt(document.getElementById('setting-long').value) || 15;
-        focusVal = Math.max(1, Math.min(120, focusVal));
-        shortVal = Math.max(1, Math.min(60, shortVal));
-        longVal = Math.max(1, Math.min(60, longVal));
-        var settings = Storage.getSettings();
-        settings.focusDuration = focusVal;
-        settings.shortBreak = shortVal;
-        settings.longBreak = longVal;
-        Storage.saveSettings(settings);
-        showNotification('设置已保存');
-        renderSettings();
-      });
-    }
-
-    var resetBtn = document.getElementById('reset-settings-btn');
-    if (resetBtn) {
-      resetBtn.addEventListener('click', function () {
-        if (confirm('确定要重置所有设置为默认值吗？')) {
-          Storage.saveSettings(Object.assign({}, Storage.defaultSettings));
-          applyTheme();
-          showNotification('设置已重置');
-          renderSettings();
-        }
-      });
-    }
-
-    var clearBtn = document.getElementById('clear-data-btn');
-    if (clearBtn) {
-      clearBtn.addEventListener('click', function () {
-        if (confirm('确定要清空全部数据吗？此操作不可恢复！')) {
-          if (confirm('再次确认：真的要删除所有数据吗？')) {
-            Storage.clearAll();
-            showNotification('所有数据已清空');
-            navigateTo('dashboard');
-          }
-        }
-      });
-    }
-
-    var demoBtn = document.getElementById('load-demo-btn');
-    if (demoBtn) {
-      demoBtn.addEventListener('click', function () {
-        loadDemoData();
-      });
-    }
   }
 
   function loadDemoData() {
@@ -325,68 +393,6 @@ var App = (function () {
         '</div>' +
         '<div id="search-results"></div>' +
       '</div>';
-
-    var searchInput = document.getElementById('search-input');
-    var searchBtn = document.getElementById('search-btn');
-
-    function doSearch() {
-      var query = searchInput.value.trim();
-      var resultsDiv = document.getElementById('search-results');
-      if (!query) {
-        resultsDiv.innerHTML = '<div class="empty-state">请输入搜索关键词</div>';
-        return;
-      }
-
-      var taskResults = Tasks.searchTasks(query);
-      var noteResults = Notes.searchNotes(query);
-      var templateResults = Templates.searchTemplates(query);
-
-      var html = '';
-
-      if (taskResults.length > 0) {
-        html += '<h4 class="search-category">任务 (' + taskResults.length + ')</h4>';
-        html += '<div class="search-list">';
-        taskResults.forEach(function (t) {
-          html += '<div class="search-item" data-page="tasks"><strong>' + escapeHtml(t.title) + '</strong><span class="search-meta">' + t.category + ' · ' + (t.completed ? '已完成' : '进行中') + '</span></div>';
-        });
-        html += '</div>';
-      }
-
-      if (noteResults.length > 0) {
-        html += '<h4 class="search-category">笔记 (' + noteResults.length + ')</h4>';
-        html += '<div class="search-list">';
-        noteResults.forEach(function (n) {
-          html += '<div class="search-item" data-page="notes"><strong>' + escapeHtml(n.title) + '</strong><span class="search-meta">' + formatDate(n.updatedAt) + '</span></div>';
-        });
-        html += '</div>';
-      }
-
-      if (templateResults.length > 0) {
-        html += '<h4 class="search-category">模板 (' + templateResults.length + ')</h4>';
-        html += '<div class="search-list">';
-        templateResults.forEach(function (t) {
-          html += '<div class="search-item" data-page="templates"><strong>' + escapeHtml(t.name) + '</strong><span class="search-meta">' + t.items.length + ' 项</span></div>';
-        });
-        html += '</div>';
-      }
-
-      if (!html) {
-        html = '<div class="empty-state">未找到相关结果</div>';
-      }
-
-      resultsDiv.innerHTML = html;
-
-      resultsDiv.querySelectorAll('[data-page]').forEach(function (el) {
-        el.addEventListener('click', function () {
-          navigateTo(this.getAttribute('data-page'));
-        });
-      });
-    }
-
-    searchBtn.addEventListener('click', doSearch);
-    searchInput.addEventListener('keydown', function (e) {
-      if (e.key === 'Enter') doSearch();
-    });
   }
 
   function renderStats() {
@@ -515,10 +521,16 @@ var App = (function () {
     renderDashboard: renderDashboard,
     renderSettings: renderSettings,
     renderSearch: renderSearch,
-    renderStats: renderStats
+    renderStats: renderStats,
+    doSearch: doSearch
   };
 })();
 
 document.addEventListener('DOMContentLoaded', function () {
   App.init();
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && e.target.id === 'search-input') {
+      App.doSearch();
+    }
+  });
 });

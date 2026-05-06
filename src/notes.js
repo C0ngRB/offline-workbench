@@ -1,9 +1,14 @@
 var Notes = (function () {
   var editingId = null;
   var showPreview = false;
+  var eventsBound = false;
 
   function init() {
     render();
+    if (!eventsBound) {
+      bindEvents();
+      eventsBound = true;
+    }
   }
 
   function getNotes() {
@@ -112,29 +117,31 @@ var Notes = (function () {
 
     html += '</div>';
     container.innerHTML = html;
-
-    bindEvents();
   }
 
   function bindEvents() {
-    var addBtn = document.getElementById('add-note-btn');
-    if (addBtn) addBtn.addEventListener('click', function () { showNoteForm(); });
-
-    document.querySelectorAll('.note-card .btn-edit').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        var id = this.getAttribute('data-id');
+    var container = document.getElementById('notes-content');
+    if (!container) return;
+    
+    container.addEventListener('click', function(e) {
+      var addBtn = e.target.closest('#add-note-btn');
+      if (addBtn) { showNoteForm(); return; }
+      
+      var editBtn = e.target.closest('.note-card .btn-edit');
+      if (editBtn) {
+        var id = editBtn.getAttribute('data-id');
         var note = getNotes().find(function (n) { return n.id === id; });
         if (note) showNoteForm(note);
-      });
-    });
-
-    document.querySelectorAll('.note-card .btn-danger').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        var id = this.getAttribute('data-id');
+        return;
+      }
+      
+      var delBtn = e.target.closest('.note-card .btn-danger');
+      if (delBtn) {
+        var id = delBtn.getAttribute('data-id');
         if (confirm('确定要删除这条笔记吗？')) {
           deleteNote(id);
         }
-      });
+      }
     });
   }
 

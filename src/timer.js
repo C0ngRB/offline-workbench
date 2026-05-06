@@ -3,6 +3,7 @@ var Timer = (function () {
   var state = null;
   var onTickCallback = null;
   var onCompleteCallback = null;
+  var eventsBound = false;
 
   function init() {
     state = Storage.getTimerState();
@@ -25,6 +26,29 @@ var Timer = (function () {
       startInterval();
     }
     render();
+    if (!eventsBound) {
+      bindEvents();
+      eventsBound = true;
+    }
+  }
+
+  function bindEvents() {
+    var container = document.getElementById('timer-display');
+    if (!container) return;
+    
+    container.addEventListener('click', function(e) {
+      var startBtn = e.target.closest('#timer-start');
+      if (startBtn) { start(); return; }
+      
+      var pauseBtn = e.target.closest('#timer-pause');
+      if (pauseBtn) { pause(); return; }
+      
+      var resetBtn = e.target.closest('#timer-reset');
+      if (resetBtn) { reset(); return; }
+      
+      var modeBtn = e.target.closest('[data-mode]');
+      if (modeBtn) { switchMode(modeBtn.getAttribute('data-mode')); }
+    });
   }
 
   function startInterval() {
@@ -172,21 +196,6 @@ var Timer = (function () {
         '<button class="btn btn-sm ' + (state.mode === 'longBreak' ? 'btn-active' : '') + '" data-mode="longBreak">长休息</button>' +
       '</div>' +
       '<div class="timer-focus-count">今日专注次数：<strong>' + Storage.getFocusCount() + '</strong></div>';
-
-    var startBtn = document.getElementById('timer-start');
-    var pauseBtn = document.getElementById('timer-pause');
-    var resetBtn = document.getElementById('timer-reset');
-
-    if (startBtn) startBtn.addEventListener('click', start);
-    if (pauseBtn) pauseBtn.addEventListener('click', pause);
-    if (resetBtn) resetBtn.addEventListener('click', reset);
-
-    var modeBtns = container.querySelectorAll('[data-mode]');
-    modeBtns.forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        switchMode(this.getAttribute('data-mode'));
-      });
-    });
   }
 
   function onTick(cb) { onTickCallback = cb; }

@@ -1,7 +1,12 @@
 var ExportImport = (function () {
+  var eventsBound = false;
 
   function init() {
     render();
+    if (!eventsBound) {
+      bindEvents();
+      eventsBound = true;
+    }
   }
 
   function render() {
@@ -33,8 +38,6 @@ var ExportImport = (function () {
         '<button class="btn btn-warning" id="import-btn">选择文件并导入</button>' +
         '<div id="import-result" class="import-result"></div>' +
       '</div>';
-
-    bindEvents();
   }
 
   function bindEvents() {
