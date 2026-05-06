@@ -83,6 +83,7 @@ var Templates = (function () {
   var isInitialized = false;
 
   function init() {
+    console.log('Templates.init called, isInitialized:', isInitialized);
     if (isInitialized) {
       render();
       return;
@@ -144,6 +145,7 @@ var Templates = (function () {
 
   function render() {
     var container = document.getElementById('templates-content');
+    console.log('Templates.render called, container:', container);
     if (!container) return;
 
     var checklists = getChecklists();
