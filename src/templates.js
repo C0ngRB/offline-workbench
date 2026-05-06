@@ -79,19 +79,18 @@ var Templates = (function () {
     }
   ];
 
-  Templates.eventsBound = false;
+  var eventsBound = false;
   var isInitialized = false;
 
   function init() {
-    console.log('Templates.init called, isInitialized:', isInitialized);
     if (isInitialized) {
       render();
       return;
     }
     render();
-    if (!Templates.eventsBound) {
+    if (!eventsBound) {
       bindEvents();
-      Templates.eventsBound = true;
+      eventsBound = true;
     }
     isInitialized = true;
   }
@@ -145,7 +144,6 @@ var Templates = (function () {
 
   function render() {
     var container = document.getElementById('templates-content');
-    console.log('Templates.render called, container:', container);
     if (!container) return;
 
     var checklists = getChecklists();
