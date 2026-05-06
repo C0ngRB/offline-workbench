@@ -1,13 +1,19 @@
 var Tasks = (function () {
   var currentFilter = 'all';
   var eventsBound = false;
+  var isInitialized = false;
 
   function init() {
+    if (isInitialized) {
+      render();
+      return;
+    }
     render();
     if (!eventsBound) {
       bindEvents();
       eventsBound = true;
     }
+    isInitialized = true;
   }
 
   function getTasks() {

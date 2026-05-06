@@ -4,8 +4,17 @@ var Timer = (function () {
   var onTickCallback = null;
   var onCompleteCallback = null;
   var eventsBound = false;
+  var isInitialized = false;
+  var cachedFocusCount = 0;
 
   function init() {
+    cachedFocusCount = Storage.getFocusCount();
+    
+    if (isInitialized) {
+      render();
+      return;
+    }
+    
     state = Storage.getTimerState();
     var settings = Storage.getSettings();
     if (!state || !state.remaining) {
@@ -21,6 +30,7 @@ var Timer = (function () {
       state.remaining = Math.max(0, state.remaining - elapsed);
       if (state.remaining <= 0) {
         complete();
+        isInitialized = true;
         return;
       }
       startInterval();
@@ -30,6 +40,7 @@ var Timer = (function () {
       bindEvents();
       eventsBound = true;
     }
+    isInitialized = true;
   }
 
   function bindEvents() {
@@ -125,9 +136,9 @@ var Timer = (function () {
     clearInterval(intervalId);
     intervalId = null;
     if (state.mode === 'focus') {
-      var count = Storage.getFocusCount() + 1;
-      Storage.saveFocusCount(count);
-      if (onCompleteCallback) onCompleteCallback('focus', count);
+      cachedFocusCount = Storage.getFocusCount() + 1;
+      Storage.saveFocusCount(cachedFocusCount);
+      if (onCompleteCallback) onCompleteCallback('focus', cachedFocusCount);
     } else {
       if (onCompleteCallback) onCompleteCallback(state.mode, null);
     }
@@ -195,7 +206,7 @@ var Timer = (function () {
         '<button class="btn btn-sm ' + (state.mode === 'shortBreak' ? 'btn-active' : '') + '" data-mode="shortBreak">短休息</button>' +
         '<button class="btn btn-sm ' + (state.mode === 'longBreak' ? 'btn-active' : '') + '" data-mode="longBreak">长休息</button>' +
       '</div>' +
-      '<div class="timer-focus-count">今日专注次数：<strong>' + Storage.getFocusCount() + '</strong></div>';
+      '<div class="timer-focus-count">今日专注次数：<strong>' + cachedFocusCount + '</strong></div>';
   }
 
   function onTick(cb) { onTickCallback = cb; }

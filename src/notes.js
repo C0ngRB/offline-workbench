@@ -2,13 +2,19 @@ var Notes = (function () {
   var editingId = null;
   var showPreview = false;
   var eventsBound = false;
+  var isInitialized = false;
 
   function init() {
+    if (isInitialized) {
+      render();
+      return;
+    }
     render();
     if (!eventsBound) {
       bindEvents();
       eventsBound = true;
     }
+    isInitialized = true;
   }
 
   function getNotes() {

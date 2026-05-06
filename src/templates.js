@@ -79,12 +79,20 @@ var Templates = (function () {
     }
   ];
 
+  Templates.eventsBound = false;
+  var isInitialized = false;
+
   function init() {
+    if (isInitialized) {
+      render();
+      return;
+    }
     render();
     if (!Templates.eventsBound) {
       bindEvents();
       Templates.eventsBound = true;
     }
+    isInitialized = true;
   }
 
   function getChecklists() {
